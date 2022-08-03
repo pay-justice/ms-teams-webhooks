@@ -1,0 +1,49 @@
+version: 2.1
+description: Send messages to MS Teams webhook connectors
+display:
+  source_url: https://github.com/pay-justice/ms-teams-webhooks
+
+examples:
+  simple_greeting:
+    description: Send webhook with git commit description
+    usage:
+      version: 2.1
+      orbs:
+        mstw: pay-justice/ms-teams-webhooks@0.0.1
+      jobs:
+        init:
+          working_directory: ~/cms-api-server
+          docker:
+            - image: prontotools/alpine-git-curl
+          steps:
+            - checkout
+            - ecm/export_commit
+            - mstw/send_simple_card:
+                title: "cms-api-server ($CIRCLE_BRANCH): Initiated"
+                text: "New commit found ([${CIRCLE_SHA1:0:7}](https://github.com/pay-justice/cms-api-server/commit/$CIRCLE_SHA1) by $CIRCLE_USERNAME)"
+
+commands:
+  send_simple_card:
+    description: "Send webhook with a simple card to MS Teams"
+    parameters:
+      webhook_url:
+        type: string
+      title:
+        type: string
+      summary:
+        type: string
+        default: ""
+      text:
+        type: string
+      themeColor:
+        type: string
+        default: ""
+      when:
+        type: string
+        default: "always"
+    steps:
+      - run:
+          when: << parameters.when >>
+          command:  |
+            curl -H "Content-Type: application/json" \
+                 -X POST -d "{ \"title\": \"<< parameters.title >>\", \"summary\": \"<< parameters.summary >>\", \"text\": \"<< parameters.text >>\", \"themeColor\": \"<< parameters.themeColor >>\" }" << parameters.webhook_url >>
